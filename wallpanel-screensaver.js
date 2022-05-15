@@ -104,7 +104,7 @@
 	}
 }
 
-const version = "1.0";
+const version = "1.1-alpha";
 const defaultConfig = {
 	enabled: false,
 	debug: false,
@@ -115,6 +115,7 @@ const defaultConfig = {
 	fade_in_time: 3.0,
 	crossfade_time: 3.0,
 	display_time: 15.0,
+	info_position_crossfade_time: 3.0,
 	screensaver_tint: 25,
 	display_tint: 0,
 	keep_screen_on_time: 0,
@@ -124,8 +125,10 @@ const defaultConfig = {
 	image_fit: 'cover', // cover / contain / fill
 	info_update_interval: 30,
 	info_position_update_interval: 30,
+	info_template: ``,
 	style: {}
 };
+
 let config = {};
 let activePanel = null;
 let messageBoxTimeout = null;
@@ -137,6 +140,8 @@ let lastInfoUpdate;
 let lastInfoPositionUpdate = Date.now();
 let bodyOverflowOrig;
 let screenWakeLock = new ScreenWakeLock();
+let imageList = [];
+let imageIndex = -1;
 
 const elHass = document.querySelector("body > home-assistant");
 const elHaMain = elHass.shadowRoot.querySelector("home-assistant-main");
@@ -149,7 +154,7 @@ messageBox.style.top = 0;
 messageBox.style.left = 0;
 messageBox.style.width = '100%';
 messageBox.style.height = '10%';
-messageBox.style.zIndex = 1000;
+messageBox.style.zIndex = 1001;
 messageBox.style.visibility = 'hidden';
 //messageBox.style.margin = '5vh auto auto auto';
 messageBox.style.padding = '5vh 0 0 0';
@@ -169,7 +174,7 @@ debugBox.style.left = 0;
 debugBox.style.width = '100%';
 debugBox.style.height = '40%';
 debugBox.style.background = '#00000099';
-debugBox.style.zIndex = 1000;
+debugBox.style.zIndex = 1001;
 debugBox.style.visibility = 'hidden';
 debugBox.style.fontFamily = 'monospace';
 debugBox.style.fontSize = '12px';
@@ -236,35 +241,8 @@ infoBox.style.fontWeight = '600';
 infoBox.style.color = '#ffffff';
 infoBox.style.textShadow = '-2px -2px 0 #000000, 2px -2px 0 #000000, -2px 2px 0 #000000, 2px 2px 0 #000000';
 infoBox.style.zIndex = 0;
+infoBox.style.opacity = 1;
 infoContainer.appendChild(infoBox);
-
-// const weatherStateInfo = document.createElement('div');
-// weatherStateInfo.id = 'wallpanel-screensaver-info-state';
-// infoBox.appendChild(weatherStateInfo);
-
-const weatherInfo = document.createElement('div');
-weatherInfo.id = 'wallpanel-screensaver-info-weather';
-weatherInfo.style.fontSize = '5vh';
-weatherInfo.style.fontWeight = '400';
-weatherInfo.style.color = '#ffffff';
-weatherInfo.style.textShadow = '-1.5px -1.5px 0 #000000, 1.5px -1.5px 0 #000000, -1.5px 1.5px 0 #000000, 1.5px 1.5px 0 #000000';
-infoBox.appendChild(weatherInfo);
-
-const timeInfo = document.createElement('div');
-timeInfo.id = 'wallpanel-screensaver-info-time';
-timeInfo.style.fontSize = '15vh';
-timeInfo.style.fontWeight = '1200';
-timeInfo.style.color = '#ffffff';
-timeInfo.style.textShadow = '-2.5px -2.5px 0 #000000, 2.5px -2.5px 0 #000000, -2.5px 2.5px 0 #000000, 2.5px 2.5px 0 #000000';
-infoBox.appendChild(timeInfo);
-
-const dateInfo = document.createElement('div');
-dateInfo.id = 'wallpanel-screensaver-info-date';
-dateInfo.style.fontSize = '8vh';
-dateInfo.style.fontWeight = '600';
-dateInfo.style.color = '#ffffff';
-dateInfo.style.textShadow = '-2px -2px 0 #000000, 2px -2px 0 #000000, -2px 2px 0 #000000, 2px 2px 0 #000000';
-infoBox.appendChild(dateInfo);
 
 function setSidebarHidden(hidden) {
 	try {
@@ -321,6 +299,22 @@ function getHaPanelLovelaceConfig() {
 	return {}
 }
 
+function getDefaultInfoTemplate() {
+return `
+<div id="wallpanel-screensaver-info-weather">{{ states["${config.weather_entity}"].attributes.temperature }} °C {{ states["${config.weather_entity}"].state.replace(/(^|\s)[A-Za-zÀ-ÖØ-öø-ÿ]/g, c => c.toUpperCase()) }}</div>
+<div id="wallpanel-screensaver-info-time">{{ (new Date()).toLocaleTimeString(undefined, {hour: '2-digit', minute:'2-digit'}) }}</div>
+<div id="wallpanel-screensaver-info-date">{{ (new Date()).toLocaleDateString(undefined, {weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'}) }}</div>
+`;
+}
+
+function getDefaultStyle() {
+return {
+	"wallpanel-screensaver-info-weather":{"font-size":"5vh", "font-weight": "400", "color": "#ffffff", "text-shadow": "-1.5px -1.5px 0 #000000, 1.5px -1.5px 0 #000000, -1.5px 1.5px 0 #000000, 1.5px 1.5px 0 #000000"},
+	"wallpanel-screensaver-info-time":{"font-size":"15vh", "font-weight": "1200", "color": "#ffffff", "text-shadow": "-2.5px -2.5px 0 #000000, 2.5px -2.5px 0 #000000, -2.5px 2.5px 0 #000000, 2.5px 2.5px 0 #000000"},
+	"wallpanel-screensaver-info-date":{"font-size":"8vh", "font-weight": "600", "color": "#ffffff", "text-shadow": "-2px -2px 0 #000000, 2px -2px 0 #000000, -2px 2px 0 #000000, 2px 2px 0 #000000"}
+}
+}
+
 function updateConfig() {
 	config = {};
 	Object.assign(config, defaultConfig);
@@ -334,6 +328,18 @@ function updateConfig() {
 				config[key] = defaultConfig[key].constructor(JSON.parse(value));
 			}
 		}
+	}
+	if(config.info_template === undefined || config.info_template === null || config.info_template.constructor !== String || config.info_template === ``) {
+		config.info_template = getDefaultInfoTemplate();
+	}
+	if(config.style === undefined || config.style === null || config.style.constructor !== Object || Object.keys(config.style).length === 0) {
+		config.style = getDefaultStyle();
+	}
+	if (config.image_url.startsWith("/")) {
+		config.image_url = `media-source://media_source${config.image_url}`;
+	}
+	if (config.image_url.startsWith("media-source://media_source")) {
+		config.image_url = config.image_url.replace(/\/+$/, '');
 	}
 	if (!config.enabled) {
 		config.debug = false;
@@ -363,7 +369,109 @@ function hideMessage() {
 	messageBox.innerHTML = '';
 }
 
+function preloadImages() {
+	if (config.debug) console.debug("Preloading images");
+	updateImage(imageOne);
+	setTimeout(function() {
+		updateImage(imageTwo);
+	}, 3000);
+}
+
 function updateImage(img) {
+	if (config.image_url.startsWith("media-source://media_source")) {
+		return updateImageFromMediaSource(img);
+	}
+	else {
+		return updateImageFromUnsplash(img);
+	}
+}
+
+// ---------------------------------------- LOCAL IMAGES FETCH [START] ---------------------------------------- //
+function updateImageFromMediaSource(img) {
+	if (imageList.length == 0) {
+		return;
+	}
+	imageIndex++;
+	if (imageIndex >= imageList.length) {
+		imageIndex = 0;
+	}
+	let imagePath = imageList[imageIndex];
+	if (!imagePath) {
+		return;
+	}
+	imagePath = imagePath.replace(/^media-source:\/\/media_source/, '/media');
+	elHass.__hass.callWS({
+		type: "auth/sign_path",
+		path: imagePath,
+		expires: 5
+	}).then(
+		result => {
+			img.src = `${document.location.origin}${result.path}`;
+		}
+	);
+}
+
+function findImages(mediaContentId) {
+	console.debug(`findImages: ${mediaContentId}`);
+	return new Promise(
+		function(resolve, reject) {
+			elHass.__hass.callWS({
+				type: "media_source/browse_media",
+				media_content_id: mediaContentId
+			}).then(
+				mediaEntry => {
+					//console.debug(mediaEntry);
+					var promises = mediaEntry.children.map(child => {
+						if (child.media_class == "image") {
+							//console.debug(child);
+							return child.media_content_id;
+						}
+						if (child.media_class == "directory") {
+							return findImages(child.media_content_id);
+						}
+					});
+					Promise.all(promises).then(results => {
+						let result = [];
+						for (let res of results) {
+							result = result.concat(res);
+						}
+						resolve(result);
+					})
+				},
+				error => {
+					//console.warn(error);
+					reject(error);
+				}
+			);
+		}
+	);
+}
+
+function updateImageList(callback) {
+	if (!config.image_url.startsWith("media-source://media_source")) return;
+	let mediaContentId = config.image_url;
+	findImages(mediaContentId).then(
+		result => {
+			imageList = result.sort();
+			if (config.debug) {
+				console.debug("Image list is now:");
+				console.debug(imageList);
+			}
+			if (callback) {
+				callback();
+			}
+		},
+		error => {
+			error = `Failed to update image list from ${config.image_url}: ${JSON.stringify(error)}`;
+			console.error(error);
+			displayMessage(error, 10000)
+		}
+	)
+}
+// ---------------------------------------- LOCAL IMAGES FETCH [END] ---------------------------------------- //
+
+// ---------------------------------------- FETCH IMAGES FROM UNSPLASH [START] ---------------------------------------- //
+function updateImageFromUnsplash(img) {
 	let width = screensaverContainer.clientWidth;
 	let height = screensaverContainer.clientHeight;
 	let timestamp = Math.floor(Date.now() / 1000);
@@ -374,6 +482,7 @@ function updateImage(img) {
 	if (config.debug) console.debug(`Updating image '${img.id}' from '${imageUrl}'`);
 	img.src = imageUrl;
 }
+// ---------------------------------------- FETCH IMAGES FROM UNSPLASH [END] ---------------------------------------- //
 
 function switchActiveImage() {
 	lastImageUpdate = Date.now();
@@ -415,25 +524,28 @@ function updateInfo() {
 
 	lastInfoUpdate = Date.now();
 
-	let weather = elHass.__hass.states[config.weather_entity];
-	if (weather) {
-		// weatherStateInfo.innerHTML = weather.state;
-		weatherInfo.innerHTML = 
-		`${weather.attributes.temperature} °C ${weather.state}`.replace(/(^|\s)[A-Za-zÀ-ÖØ-öø-ÿ]/g, c => c.toUpperCase());
-	}
-
-	let now = new Date();
-	let timeOptions = {hour: '2-digit', minute:'2-digit'}
-	timeInfo.innerHTML = now.toLocaleTimeString(undefined, timeOptions);
-	let dateOptions = {weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'};		
-	dateInfo.innerHTML = now.toLocaleDateString(undefined, dateOptions);
+	let html = config.info_template;
+	let states = elHass.__hass.states;
+	html = html.replace(/{{s*(.+?)\s*}}/g, function (match, expression, offset, string) {
+		try {
+			return eval(expression);
+		}
+		catch (err) {
+			console.warn(err);
+			return err;
+		}
+	});
+	infoBox.innerHTML = html;
+	
+	applyStyleConfig();
 }
 
 function updateScreenSaverInfoBoxPosition() {
 	if (config.debug) console.debug("Updating info position");
 	lastInfoPositionUpdate = Date.now();
 
-	const allowedMinWidth = 0
+	if(infoBox.style.opacity == 0) {
+		const allowedMinWidth = 0
 	const allowedMinHeight = 0
 	const allowedMaxWidth = window.innerWidth - (0.5 * window.innerWidth);
 	const allowedMaxHeight = window.innerHeight - (0.5 * window.innerHeight);
@@ -443,6 +555,16 @@ function updateScreenSaverInfoBoxPosition() {
 	infoBox.style.position="relative";
     infoBox.style.left=`${randomLeftPos}px`;
 	infoBox.style.top=`${randomTopPos}px`;
+
+	infoBox.style.opacity = 1;
+	}
+	else {
+		infoBox.style.opacity = 0;
+
+		setTimeout(function() {
+			updateScreenSaverInfoBoxPosition();
+		}, Math.round((config.info_position_crossfade_time*1000)/2));
+	}
 }
 
 function startScreensaver() {
@@ -577,20 +699,20 @@ function applyStyleConfig() {
 	infoContainer.style.backgroundColor = `rgba(0, 0, 0, ${config.screensaver_tint/100})`;
 	displayTintContainer.style.backgroundColor = `rgba(0, 0, 0, ${config.display_tint/100})`;
 	screensaverContainer.style.transition = `opacity ${Math.round(config.fade_in_time*1000)}ms ease-in-out`;
+	infoBox.style.transition = `opacity ${Math.round((config.info_position_crossfade_time*1000)/2)}ms ease-in-out`;
 	imageOne.style.transition = `opacity ${Math.round(config.crossfade_time*1000)}ms ease-in-out`;
 	imageTwo.style.transition = `opacity ${Math.round(config.crossfade_time*1000)}ms ease-in-out`;
 	imageOne.style.objectFit = config.image_fit;
 	imageTwo.style.objectFit = config.image_fit;
 	if (config.style) {
 		for (const elId in config.style) {
-			if (elId.startsWith('wallpanel-')) {
-				let el = document.getElementById(elId);
+			let el = document.getElementById(elId);
 				if (el) {
+					if (config.debug) console.debug(`Applying style for element: ${el}`);
 					for (const attr in config.style[elId]) {
 						el.style.setProperty(attr, config.style[elId][attr]);
 					}
 				}
-			}
 		}
 	}
 }
@@ -642,11 +764,12 @@ window.setInterval(() => {
 				applyStyleConfig();
 				console.info(`Wallpanel config: ${JSON.stringify(config)}`);
 				if (config.idle_time > 0) {
-					if (config.debug) console.debug("Preloading images");
-					updateImage(imageOne);
-					setTimeout(function() {
-						updateImage(imageTwo);
-					}, 3000);
+					if (config.image_url.startsWith("media-source://media_source")) {
+						updateImageList(preloadImages);
+					}	 
+					else {
+						preloadImages();
+					}
 				}
 			}
 			if (config.idle_time > 0 && Date.now() - idleSince >= config.idle_time*1000) {

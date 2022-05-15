@@ -47,12 +47,76 @@ You can set the following configuration parameters for every individual lovelace
 | image_fit               | Value to be used for the CSS-property 'object-fit' of the images (possible values are: cover / contain / fill / ...). |     cover |
 | info_update_interval    | Update interval for the screensaver weather-clock (date-time and weather information) (0 = disabled or hidden).            |  30     |
 | info_position_update_interval | Time interval in seconds at which weather-clock (date-time and weather information) position will be randomly changed on the screensaver screen to avoid screen burn issue on always-on screens (0 = disabled). | 30     |
-|	style                   | Additional CSS styles for wallpanel-screensaver elements.                                 | {}      |
+| info_position_crossfade_time          | Info position crossfade duration in seconds.                                    | 3.0     |
+| info_template           | Info box content HTML template. See below for details.                                    | See below |
+|	style                   | Additional CSS styles for wallpanel-screensaver elements.                                 | See below      |
+
+### image_url
+Screensaver images will be fetched from this URL.
+This can be any HTTP URL or a Home Assistant media-source URL.
+
+The following variables can be used in HTTP URLs:
+- `${timestamp}` = current unix timestamp
+- `${width}` = viewport width
+- `${height}` = viewport height
+
+i.e.: `http://unsplash.it/${width}/${height}?random=${timestamp}`
+
+It is also possible to use images from the Home Assistant Local Media source.
+Just set the `image_url` to a media-source URL as displayed in the URL of the Home Assistant Media Browser.
+See [Home Assistant Media Source integration documentation](https://www.home-assistant.io/integrations/media_source) for details.
+
+- `media-source://media_source` = Images in all Local Media sources
+- `media-source://media_source/media1` = Images in the Local Media directory named `media1`
+- `media-source://media_source/media1/folder1` = Images in `folder1` of the Local Media directory named `media1`
+
+Instead of using `media-source://media_source/media1/folder1` as `image_url` you can just use `/media1/folder1` as a shortcut.
+
+### info_template and style
+
+The screensaver info box will be build from HTML code in `info_template`.
+JavaScript expression in between `{{` `}}` will be evaluated.
+The local object `states` can be used to access all entity states of the Home Assistant state machine.
+
+The default value of the `info_template` is:
+
+```html
+<div id="wallpanel-screensaver-info-weather">{{ states["${config.weather_entity}"].attributes.temperature }} °C {{ states["${config.weather_entity}"].state.replace(/(^|\s)[A-Za-zÀ-ÖØ-öø-ÿ]/g, c => c.toUpperCase()) }}</div>
+<div id="wallpanel-screensaver-info-time">{{ (new Date()).toLocaleTimeString(undefined, {hour: '2-digit', minute:'2-digit'}) }}</div>
+<div id="wallpanel-screensaver-info-date">{{ (new Date()).toLocaleDateString(undefined, {weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'}) }}</div>
+```
+
+The CSS styles of components used under `info_template` can also be passed in `style` parameter. 
+
+The default value of the `style` is:
+```yaml
+    wallpanel-screensaver-info-date:
+      font-size: 8vh
+      font-weight: 600
+      color: '#ffffff'
+      text-shadow: >-
+        -2px -2px 0 #000000, 2px -2px 0 #000000, -2px 2px 0 #000000,
+        2px 2px 0 #000000
+    wallpanel-screensaver-info-time:
+      font-size: 15vh
+      font-weight: 1200
+      color: '#ffffff'
+      text-shadow: >-
+        -2.5px -2.5px 0 #000000, 2.5px -2.5px 0 #000000, -2.5px 2.5px 0 #000000, 2.5px 2.5px 0
+        #000000
+    wallpanel-screensaver-info-weather:
+      font-size: 5vh
+      font-weight: 400
+      color: '#ffffff'
+      text-shadow: >-
+        -1.5px -1.5px 0 #000000, 1.5px -1.5px 0 #000000, -1.5px 1.5px 0 #000000,
+        1.5px 1.5px 0 #000000
+```
 
 ### Lovelace dashboard yaml
 You can add the configuration to your lovelace dashboard configuration yaml (at the top of raw config).
 
-**Default Config:**:
+**Default Config**:
 ```yaml
 wallpanel_screensaver:
   enabled: false
@@ -73,6 +137,9 @@ wallpanel_screensaver:
   image_fit: cover
   info_update_interval: 30
   info_position_update_interval: 30
+  info_template: '<div id="wallpanel-screensaver-info-weather">{{ states["${config.weather_entity}"].attributes.temperature }} °C {{ states["${config.weather_entity}"].state.replace(/(^|\s)[A-Za-zÀ-ÖØ-öø-ÿ]/g, c => c.toUpperCase()) }}</div>
+  <div id="wallpanel-screensaver-info-time">{{ (new Date()).toLocaleTimeString(undefined, {hour: '2-digit', minute:'2-digit'}) }}</div>
+  <div id="wallpanel-screensaver-info-date">{{ (new Date()).toLocaleDateString(undefined, {weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'}) }}</div>'
   style:
     wallpanel-screensaver-info-date:
       font-size: 8vh
