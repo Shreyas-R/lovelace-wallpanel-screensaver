@@ -1,6 +1,5 @@
 {
     "name": "Lovelace Wallpanel Screensaver",
     "render_readme": true,
-    "content_in_root": false,
     "filename": "wallpanel-screensaver.js"
   }
