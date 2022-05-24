@@ -117,10 +117,8 @@ class ScreenWakeLock {
 // ---------------------------------------- DEPENDENCIES [END] ---------------------------------------- //
 
 // ---------------------------------------- GLOBAL CONSTANTS AND VARIABLES [START] ---------------------------------------- //
-const version = "1.1";
-const scripts = document.getElementsByTagName('script');
-const scriptUrl = new URL(scripts[scripts.length - 1].src);
-const filesParentPath = scriptUrl.pathname.substring(0, scriptUrl.pathname.lastIndexOf("/"));
+const version = "1.1.1";
+const filesParentPath = getScriptParentPath();
 const defaultConfig = {
 	enabled: false,
 	debug: false,
@@ -505,6 +503,20 @@ function applyNightModeConfig() {
 	delete nightModeConfig.end_time;
 
 	Object.assign(config, nightModeConfig);
+}
+
+function getScriptParentPath() {
+	const scriptName = 'wallpanel-screensaver.js';
+	const scripts = document.getElementsByTagName('script');
+
+	for (var i = (scripts.length - 1); i >= 0; i--) {
+		const src = scripts[i].src;
+		if (src && (src.indexOf(scriptName) >= 0)) {
+			const scriptUrl = new URL(src);
+			return scriptUrl.pathname.substring(0, scriptUrl.pathname.lastIndexOf("/"));
+		}
+	}
+	return '';
 }
 
 /**

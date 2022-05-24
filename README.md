@@ -125,7 +125,7 @@ wallpanel_screensaver:
 		  <table>
 		  	<tr>
 		  		<th><img id="weather-temperature-icon" src="{{ filesParentPath }}/weather-icons/thermometer.svg"/></th>
- 		  		<th>{{ states[config.weather_entity].attributes.temperature }}°C&ensp;</th>
+ 		  		<th>{{ states[config.weather_entity].attributes.temperature }}°&ensp;</th>
  		  		<th><img id="weather-state-icon" src="{{ filesParentPath }}/weather-icons/{{ states[config.weather_entity].state }}-sun-{{ states["sun.sun"].state.replace("_", "-"); }}.svg"/></th>
   				<th>{{ states[config.weather_entity].state.replace(/(^|\s)[A-Za-zÀ-ÖØ-öø-ÿ]/g, c => c.toUpperCase()) }}</th>
 			  </tr>
@@ -350,7 +350,7 @@ The default value of the `info_template` parameter is:
   <table>
   	<tr>
   		<th><img id="weather-temperature-icon" src="{{ filesParentPath }}/weather-icons/thermometer.svg"/></th>
-  		<th>{{ states[config.weather_entity].attributes.temperature }}°C&ensp;</th>
+  		<th>{{ states[config.weather_entity].attributes.temperature }}°&ensp;</th>
   		<th><img id="weather-state-icon" src="{{ filesParentPath }}/weather-icons/{{ states[config.weather_entity].state }}-sun-{{ states["sun.sun"].state.replace("_", "-"); }}.svg"/></th>
 		<th>{{ states[config.weather_entity].state.replace(/(^|\s)[A-Za-zÀ-ÖØ-öø-ÿ]/g, c => c.toUpperCase()) }}</th>
 	  </tr>
