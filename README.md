@@ -1,4 +1,4 @@
-# Lovelace Wallpanel Screensaver
+# [DEPRECATED] Lovelace Wallpanel Screensaver
 [![hacs_badge](https://img.shields.io/badge/HACS-DEFAULT-9cf?style=for-the-badge&logo=homeassistant)](https://github.com/hacs/integration)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/Shreyas-R/lovelace-wallpanel-screensaver?style=for-the-badge)
 [![GitHub license](https://img.shields.io/github/license/Shreyas-R/lovelace-wallpanel-screensaver?style=for-the-badge)](https://github.com/Shreyas-R/lovelace-wallpanel-screensaver/blob/main/LICENSE)
@@ -11,18 +11,23 @@ Wall panel mode for your Home Assistant Lovelace dashboard with more focus on sc
 ![Screenshot of screensaver](./doc/screenshot-default-config-screensaver.png)
 ![Screenshot of screensaver](./doc/screenshot-screensaver.gif)
 
+## DEPRECATION NOTICE
+This HA frontend plugin has been deprecated for following reasons,
+1. I'm not getting enough time to work on this project.
+2. The development of [original repo](https://github.com/j-a-n/lovelace-wallpanel) (from which this repo was forked from) has been resumed by the main developer with similar and better implementation of features.
+
 ## Installation and Upgrade
 
 <details>
 <summary>HACS</summary>
 
-### HACS Default
-1. Install [HACS](https://hacs.xyz).
-2. Go to `HACS` => `Frontend` and click on `EXPLORE & DOWNLOAD REPOSITORIES` button.
-3. Search `Lovelace Wallpanel Screensaver` on opened `Add repository` dialog.
-4. Select the version you want to install (latest preferred).
-5. Click on install button.
-6. Reload the webpage in your browser.
+### ~~HACS Default~~
+1. ~~Install [HACS](https://hacs.xyz).~~
+2. ~~Go to `HACS` => `Frontend` and click on `EXPLORE & DOWNLOAD REPOSITORIES` button.~~
+3. ~~Search `Lovelace Wallpanel Screensaver` on opened `Add repository` dialog.~~
+4. ~~Select the version you want to install (latest preferred).~~
+5. ~~Click on install button.~~
+6. ~~Reload the webpage in your browser.~~
 
 ### ~~HACS Custom~~
 1. ~~Install [HACS](https://hacs.xyz).~~
